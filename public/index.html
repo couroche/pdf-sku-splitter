@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF SKU Splitter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            font-weight: 700;
+        }
+
+        .drop-zone {
+            border: 3px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f7fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .drop-zone:hover {
+            border-color: #667eea;
+            background: #edf2f7;
+        }
+
+        .drop-zone.dragover {
+            border-color: #667eea;
+            background: #e6f3ff;
+            transform: scale(1.02);
+        }
+
+        .drop-zone-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .drop-zone-text {
+            font-size: 1.1em;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone-subtext {
+            font-size: 0.9em;
+            color: #718096;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 20px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .file-item {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+
+        .file-item:hover {
+            background: #e2e8f0;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .file-icon {
+            font-size: 1.5em;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 3px;
+        }
+
+        .file-size {
+            font-size: 0.85em;
+            color: #718096;
+        }
+
+        .remove-btn {
+            background: #fc8181;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: #f56565;
+            transform: scale(1.05);
+        }
+
+        .sku-input-section {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .input-label {
+            display: block;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-hint {
+            font-size: 0.85em;
+            color: #718096;
+            margin-top: 6px;
+        }
+
+        .sku-tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .sku-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .sku-tag-remove {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .sku-tag-remove:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .process-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .process-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .process-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            background: #e2e8f0;
+            border-radius: 8px;
+            height: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .results-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .result-item {
+            background: #f0fff4;
+            border: 2px solid #9ae6b4;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-sku {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .result-pages {
+            color: #718096;
+            font-size: 0.95em;
+        }
+
+        .download-btn {
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            background: #38a169;
+            transform: scale(1.05);
+        }
+
+        .download-all-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .download-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(72, 187, 120, 0.4);
+        }
+
+        .error-message {
+            background: #fed7d7;
+            border: 2px solid #fc8181;
+            color: #742a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .sku-detection-section {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .detection-message {
+            background: #e6f3ff;
+            border: 2px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detection-icon {
+            font-size: 2.5em;
+        }
+
+        .detection-text {
+            flex: 1;
+            color: #2d3748;
+        }
+
+        .detected-sku-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+
+        .detected-sku-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .detected-sku-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .detected-sku-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .detected-sku-stats {
+            display: flex;
+            gap: 20px;
+            color: #718096;
+            font-size: 0.95em;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-icon {
+            font-size: 1.2em;
+        }
+
+        .sku-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .primary-btn, .secondary-btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .secondary-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .secondary-btn:hover {
+            background: #f7fafc;
+        }
+
+        .validation-message {
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 2px solid;
+        }
+
+        .validation-message.success {
+            background: #f0fff4;
+            border-color: #9ae6b4;
+        }
+
+        .validation-message.warning {
+            background: #fffaf0;
+            border-color: #fbd38d;
+        }
+
+        .validation-icon {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .validation-message.success .validation-icon {
+            color: #48bb78;
+        }
+
+        .validation-message.warning .validation-icon {
+            color: #ed8936;
+        }
+
+        .validation-text {
+            flex: 1;
+        }
+
+        .validation-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .validation-message.success .validation-title {
+            color: #2f855a;
+        }
+
+        .validation-message.warning .validation-title {
+            color: #c05621;
+        }
+
+        .validation-details {
+            font-size: 0.95em;
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 PDF SKU Splitter</h1>
+            <p>Split and combine PDFs based on SKU identifiers</p>
+        </div>
+
+        <div class="main-card">
+            <!-- Section 1: Upload PDFs -->
+            <div class="section">
+                <div class="section-title">
+                    <span class="section-number">1</span>
+                    Upload PDF Files
+                </div>
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon">📁</div>
+                    <div class="drop-zone-text">Drag & drop PDF files here</div>
+                    <div class="drop-zone-subtext">or click to browse</div>
+                    <input type="file" id="fileInput" class="file-input" accept=".pdf" multiple>
+                </div>
+                <div id="fileList" class="file-list"></div>
+            </div>
+
+            <!-- Section 2: Specify SKUs -->
+            <div class="section" id="skuSection" style="display: none;">
+                <div class="section-title">
+                    <span class="section-number">2</span>
+                    Detected SKUs - Please Confirm
+                </div>
+                <div class="sku-detection-section">
+                    <div class="detection-message">
+                        <div class="detection-icon">🔍</div>
+                        <div class="detection-text">
+                            <strong>Analysis Complete!</strong> We detected the following SKUs in your PDFs.
+                            Please review and confirm they are correct before proceeding.
+                        </div>
+                    </div>
+                    <div id="detectedSkusList"></div>
+                    <div class="sku-actions">
+                        <button id="editSkusBtn" class="secondary-btn">✏️ Edit SKUs Manually</button>
+                        <button id="confirmSkusBtn" class="primary-btn">✓ Confirm & Continue</button>
+                    </div>
+                </div>
+                
+                <!-- Manual SKU editing (hidden by default) -->
+                <div class="sku-input-section" id="manualSkuSection" style="display: none;">
+                    <div class="input-group">
+                        <label class="input-label" for="skuInput">Enter SKUs (one at a time)</label>
+                        <input 
+                            type="text" 
+                            id="skuInput" 
+                            class="input-field" 
+                            placeholder="e.g., SKU-12345"
+                        >
+                        <div class="input-hint">Press Enter to add each SKU</div>
+                    </div>
+                    <div id="skuTags" class="sku-tag-container"></div>
+                </div>
+            </div>
+
+            <!-- Section 3: Process -->
+            <div class="section" id="processSection" style="display: none;">
+                <button id="processBtn" class="process-btn" disabled>
+                    🚀 Split & Combine PDFs
+                </button>
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section" id="progressSection">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">Processing...</div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <div class="section-title">
+                    <span class="section-number">✓</span>
+                    Results
+                </div>
+                <div id="resultsList"></div>
+                <button id="downloadAllBtn" class="download-all-btn">
+                    💾 Download All PDFs
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // State management
+        const state = {
+            files: [],
+            detectedSkus: {},  // Will store SKU -> { totalPages, upsPages }
+            confirmedSkus: [],
+            processedPDFs: new Map(),
+            stage: 1  // 1 = analysis, 2 = processing
+        };
+
+        // DOM elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const skuSection = document.getElementById('skuSection');
+        const processSection = document.getElementById('processSection');
+        const detectedSkusList = document.getElementById('detectedSkusList');
+        const editSkusBtn = document.getElementById('editSkusBtn');
+        const confirmSkusBtn = document.getElementById('confirmSkusBtn');
+        const manualSkuSection = document.getElementById('manualSkuSection');
+        const skuInput = document.getElementById('skuInput');
+        const skuTags = document.getElementById('skuTags');
+        const processBtn = document.getElementById('processBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsList = document.getElementById('resultsList');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // File upload handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        async function handleFiles(files) {
+            const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
+            
+            pdfFiles.forEach(file => {
+                if (!state.files.some(f => f.name === file.name)) {
+                    state.files.push(file);
+                }
+            });
+
+            renderFileList();
+            
+            // If we have files, start analysis
+            if (state.files.length > 0) {
+                await analyzeFiles();
+            }
+        }
+
+        function renderFileList() {
+            fileList.innerHTML = state.files.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <div class="file-icon">📄</div>
+                        <div class="file-details">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                    </div>
+                    <button class="remove-btn" onclick="removeFile(${index})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            state.files.splice(index, 1);
+            renderFileList();
+            
+            // Reset to stage 1 if no files
+            if (state.files.length === 0) {
+                skuSection.style.display = 'none';
+                processSection.style.display = 'none';
+                state.detectedSkus = {};
+                state.confirmedSkus = [];
+                state.stage = 1;
+            } else {
+                // Re-analyze remaining files
+                analyzeFiles();
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Stage 1: Analyze files and detect SKUs
+        async function analyzeFiles() {
+            try {
+                progressSection.classList.add('active');
+                resultsSection.classList.remove('active');
+                skuSection.style.display = 'none';
+                
+                state.detectedSkus = {};
+                
+                let totalPages = 0;
+                let processedPages = 0;
+
+                // Count total pages
+                for (const file of state.files) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    totalPages += pdfDoc.numPages;
+                }
+
+                updateProgress(0, 100, 'Analyzing PDFs for SKUs...');
+
+                // Analyze each PDF to detect SKUs and count all pages
+                for (const file of state.files) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                    // First pass: identify all pages with their SKUs
+                    const pageSkus = [];
+                    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                        const page = await pdfDoc.getPage(pageNum);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+
+                        // Check for "Single SKU" line
+                        const singleSkuPattern = /Single SKU\s+(\S+)/i;
+                        const singleSkuMatch = pageText.match(singleSkuPattern);
+                        
+                        if (singleSkuMatch) {
+                            pageSkus.push(singleSkuMatch[1].trim());
+                        } else {
+                            pageSkus.push(null);
+                        }
+
+                        processedPages++;
+                        updateProgress(processedPages, totalPages, 'Analyzing PDFs...');
+                    }
+
+                    // Second pass: assign all pages to SKUs using tracker logic
+                    let currentSku = null;
+                    for (let i = 0; i < pageSkus.length; i++) {
+                        const pageSku = pageSkus[i];
+                        
+                        // If this page has a SKU, update current SKU
+                        if (pageSku) {
+                            currentSku = pageSku;
+                            
+                            if (!state.detectedSkus[currentSku]) {
+                                state.detectedSkus[currentSku] = {
+                                    totalPages: 0,
+                                    upsPages: 0
+                                };
+                            }
+                            
+                            // This is an FBA label page
+                            state.detectedSkus[currentSku].totalPages++;
+                        } else if (currentSku) {
+                            // This page has no SKU but we have a current SKU
+                            // It's likely a UPS label for the previous SKU
+                            state.detectedSkus[currentSku].totalPages++;
+                            state.detectedSkus[currentSku].upsPages++;
+                        }
+                    }
+                }
+
+                progressSection.classList.remove('active');
+                
+                // Show detected SKUs
+                displayDetectedSkus();
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showError(`Error analyzing PDFs: ${error.message}`);
+                progressSection.classList.remove('active');
+            }
+        }
+
+        function displayDetectedSkus() {
+            const skus = Object.keys(state.detectedSkus);
+            
+            if (skus.length === 0) {
+                detectedSkusList.innerHTML = '<div class="detected-sku-card"><div class="detected-sku-name">No SKUs detected</div><p style="color: #718096; margin-top: 10px;">No "Single SKU" lines were found in the uploaded PDFs.</p></div>';
+                confirmSkusBtn.disabled = true;
+                skuSection.style.display = 'block';
+                return;
+            }
+            
+            // Calculate total pages across all SKUs
+            const totalPages = Object.values(state.detectedSkus).reduce((sum, data) => sum + data.totalPages, 0);
+            
+            detectedSkusList.innerHTML = `
+                <div style="background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 1.1em; color: #718096; margin-bottom: 5px;">Total Pages Detected</div>
+                    <div style="font-size: 2.5em; font-weight: 700; color: #2d3748;">${totalPages}</div>
+                    <div style="font-size: 0.9em; color: #a0aec0; margin-top: 5px;">${skus.length} SKU${skus.length > 1 ? 's' : ''} found</div>
+                </div>
+            ` + skus.map(sku => {
+                const data = state.detectedSkus[sku];
+                return `
+                    <div class="detected-sku-card">
+                        <div class="detected-sku-header">
+                            <div class="detected-sku-name">${sku}</div>
+                        </div>
+                        <div class="detected-sku-stats">
+                            <div class="stat-item">
+                                <span class="stat-icon">📄</span>
+                                <span><strong>${data.totalPages}</strong> total pages</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">📦</span>
+                                <span><strong>${data.upsPages}</strong> UPS labels</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">📋</span>
+                                <span><strong>${data.totalPages - data.upsPages}</strong> FBA labels</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            confirmSkusBtn.disabled = false;
+            skuSection.style.display = 'block';
+        }
+
+        // Button handlers
+        editSkusBtn.addEventListener('click', () => {
+            manualSkuSection.style.display = 'block';
+            state.confirmedSkus = Object.keys(state.detectedSkus);
+            renderSkuTags();
+        });
+
+        confirmSkusBtn.addEventListener('click', async () => {
+            state.confirmedSkus = Object.keys(state.detectedSkus);
+            state.stage = 2;
+            
+            // Directly trigger processing
+            await processPDFs();
+        });
+
+        // SKU management
+        skuInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && skuInput.value.trim()) {
+                const sku = skuInput.value.trim();
+                if (!state.confirmedSkus.includes(sku)) {
+                    state.confirmedSkus.push(sku);
+                    renderSkuTags();
+                    updateProcessButton();
+                }
+                skuInput.value = '';
+            }
+        });
+
+        function renderSkuTags() {
+            skuTags.innerHTML = state.confirmedSkus.map((sku, index) => `
+                <div class="sku-tag">
+                    ${sku}
+                    <button class="sku-tag-remove" onclick="removeSku(${index})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removeSku(index) {
+            state.confirmedSkus.splice(index, 1);
+            renderSkuTags();
+            updateProcessButton();
+        }
+
+        function updateProcessButton() {
+            processBtn.disabled = state.files.length === 0 || state.confirmedSkus.length === 0;
+        }
+
+        // PDF Processing
+        processBtn.addEventListener('click', processPDFs);
+
+        // Helper function to extract shipping address from page text
+        function extractShippingAddress(pageText) {
+            const shipToMatch = pageText.match(/SHIP TO[:\s]+([^\n]+(?:\n[^\n]+){0,3})/i);
+            if (shipToMatch) {
+                // Clean and normalize the address
+                return shipToMatch[1].trim().replace(/\s+/g, ' ').substring(0, 200);
+            }
+            return null;
+        }
+
+        // Helper function to extract page sequence (e.g., "1 of 3")
+        function extractPageSequence(pageText) {
+            const match = pageText.match(/(\d+)\s*of\s*(\d+)/i);
+            if (match) {
+                return {
+                    current: parseInt(match[1]),
+                    total: parseInt(match[2])
+                };
+            }
+            return null;
+        }
+
+        // Helper function to check if SKU exists - prioritize "Single SKU" line
+        function hasExactSKU(pageText, sku) {
+            // First, try to find it in "Single SKU" line (most specific and accurate)
+            const singleSkuPattern = /Single SKU\s+(\S+)/i;
+            const singleSkuMatch = pageText.match(singleSkuPattern);
+            
+            if (singleSkuMatch) {
+                const foundSku = singleSkuMatch[1].trim();
+                return foundSku === sku;
+            }
+            
+            // If no "Single SKU" line found, this page doesn't have a primary SKU
+            return false;
+        }
+
+        // Helper function to log debug info
+        function debugLog(message, data = null) {
+            console.log(`[DEBUG] ${message}`, data || '');
+        }
+
+        async function processPDFs() {
+            try {
+                // Hide SKU section when processing starts
+                skuSection.style.display = 'none';
+                
+                errorMessage.classList.remove('active');
+                progressSection.classList.add('active');
+                resultsSection.classList.remove('active');
+                processBtn.disabled = true;
+                state.processedPDFs.clear();
+
+                let totalPages = 0;
+                let processedPages = 0;
+
+                // First, count total pages
+                for (const file of state.files) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    totalPages += pdfDoc.numPages;
+                }
+
+                debugLog('Total pages to process:', totalPages);
+
+                // First pass: Extract all page information
+                const allPages = [];
+                
+                for (const file of state.files) {
+                    updateProgress(processedPages, totalPages, `Analyzing ${file.name}...`);
+
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                        const page = await pdfDoc.getPage(pageNum);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+
+                        // Find exact SKU match - log all attempts
+                        let matchedSku = null;
+                        let skuSearchResults = [];
+                        for (const sku of state.confirmedSkus) {
+                            const hasMatch = hasExactSKU(pageText, sku);
+                            skuSearchResults.push(`${sku}:${hasMatch ? 'YES' : 'NO'}`);
+                            if (hasMatch) {
+                                matchedSku = sku;
+                                debugLog(`Page ${pageNum} in ${file.name}: Found SKU ${sku}`);
+                                break;
+                            }
+                        }
+                        
+                        if (!matchedSku) {
+                            debugLog(`Page ${pageNum} in ${file.name}: No SKU found [${skuSearchResults.join(', ')}]`);
+                        }
+
+                        const shippingAddress = extractShippingAddress(pageText);
+                        const pageSequence = extractPageSequence(pageText);
+
+                        allPages.push({
+                            file: file,
+                            fileName: file.name,
+                            pageNumber: pageNum,
+                            sku: matchedSku,
+                            shippingAddress: shippingAddress,
+                            pageSequence: pageSequence,
+                            pageText: pageText
+                        });
+
+                        if (pageSequence) {
+                            debugLog(`Page ${pageNum}: Sequence ${pageSequence.current} of ${pageSequence.total}`);
+                        }
+
+                        processedPages++;
+                        updateProgress(processedPages, totalPages, `Analyzing ${file.name} (Page ${pageNum}/${pdfDoc.numPages})...`);
+                    }
+                }
+
+                // Second pass: Assign pages to SKUs based on current SKU tracker
+                updateProgress(100, 100, 'Assigning pages to SKUs...');
+
+                debugLog('Starting SKU assignment...');
+
+                // Track pages and label counts for each SKU
+                const skuPagesMap = new Map();
+                const skuLabelCounts = new Map();
+                state.confirmedSkus.forEach(sku => {
+                    skuPagesMap.set(sku, []);
+                    skuLabelCounts.set(sku, { fbaLabels: 0, upsLabels: 0 });
+                });
+
+                let currentSku = null;
+
+                for (const pageInfo of allPages) {
+                    // If this page has a SKU, update current SKU
+                    if (pageInfo.sku) {
+                        currentSku = pageInfo.sku;
+                        debugLog(`Page ${pageInfo.pageNumber}: Found SKU ${currentSku}`);
+                        
+                        // This is an FBA label page
+                        skuLabelCounts.get(currentSku).fbaLabels++;
+                    } else if (currentSku) {
+                        // This page has no SKU but we have a current SKU - it's a UPS label
+                        skuLabelCounts.get(currentSku).upsLabels++;
+                    }
+
+                    // Assign this page to the current SKU
+                    if (currentSku) {
+                        skuPagesMap.get(currentSku).push({
+                            file: pageInfo.file,
+                            pageNumber: pageInfo.pageNumber
+                        });
+                        debugLog(`Page ${pageInfo.pageNumber} → ${currentSku}`);
+                    } else {
+                        debugLog(`Page ${pageInfo.pageNumber}: No current SKU, skipping`);
+                    }
+                }
+
+                debugLog('SKU assignment complete');
+
+                // Log final SKU page counts
+                for (const [sku, pages] of skuPagesMap.entries()) {
+                    const counts = skuLabelCounts.get(sku);
+                    debugLog(`SKU ${sku}: ${pages.length} pages (${counts.fbaLabels} FBA, ${counts.upsLabels} UPS)`);
+                }
+
+                // Create combined PDFs for each SKU
+                updateProgress(100, 100, 'Creating combined PDFs...');
+
+                for (const [sku, pages] of skuPagesMap.entries()) {
+                    if (pages.length > 0) {
+                        const combinedPdf = await PDFLib.PDFDocument.create();
+
+                        // Group pages by source file for efficient processing
+                        const pagesByFile = new Map();
+                        pages.forEach(({ file, pageNumber }) => {
+                            if (!pagesByFile.has(file)) {
+                                pagesByFile.set(file, []);
+                            }
+                            pagesByFile.get(file).push(pageNumber);
+                        });
+
+                        // Process each source file
+                        for (const [file, pageNumbers] of pagesByFile.entries()) {
+                            const arrayBuffer = await file.arrayBuffer();
+                            const sourcePdf = await PDFLib.PDFDocument.load(arrayBuffer);
+
+                            // Copy pages in order
+                            for (const pageNum of pageNumbers.sort((a, b) => a - b)) {
+                                const [copiedPage] = await combinedPdf.copyPages(sourcePdf, [pageNum - 1]);
+                                combinedPdf.addPage(copiedPage);
+                            }
+                        }
+
+                        // Save the combined PDF
+                        const pdfBytes = await combinedPdf.save();
+                        const labelCounts = skuLabelCounts.get(sku);
+                        state.processedPDFs.set(sku, {
+                            bytes: pdfBytes,
+                            pageCount: pages.length,
+                            fbaLabels: labelCounts.fbaLabels,
+                            upsLabels: labelCounts.upsLabels
+                        });
+                    }
+                }
+
+                // Validate: total output pages should match total input pages
+                let outputPageCount = 0;
+                for (const [sku, data] of state.processedPDFs.entries()) {
+                    outputPageCount += data.pageCount;
+                }
+
+                debugLog(`Validation: Input=${totalPages}, Output=${outputPageCount}`);
+
+                // Show results with validation
+                progressSection.classList.remove('active');
+                displayResults(totalPages, outputPageCount);
+
+            } catch (error) {
+                console.error('Processing error:', error);
+                showError(`Error processing PDFs: ${error.message}`);
+                progressSection.classList.remove('active');
+                processBtn.disabled = false;
+            }
+        }
+
+        function updateProgress(current, total, message) {
+            const percentage = Math.round((current / total) * 100);
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = message;
+        }
+
+        function displayResults(inputPageCount, outputPageCount) {
+            resultsSection.classList.add('active');
+            
+            // Create validation message
+            const validationMatch = inputPageCount === outputPageCount;
+            const validationHtml = `
+                <div class="validation-message ${validationMatch ? 'success' : 'warning'}">
+                    <div class="validation-icon">${validationMatch ? '✓' : '⚠'}</div>
+                    <div class="validation-text">
+                        <div class="validation-title">${validationMatch ? 'Page Count Validated' : 'Page Count Mismatch'}</div>
+                        <div class="validation-details">
+                            Input: ${inputPageCount} pages → Output: ${outputPageCount} pages
+                            ${!validationMatch ? '<br><strong>Some pages may not have been assigned to a SKU</strong>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (state.processedPDFs.size === 0) {
+                resultsList.innerHTML = validationHtml + '<div class="result-item" style="background: #fff5f5; border-color: #fc8181;"><div class="result-info"><div class="result-sku">No matches found</div><div class="result-pages">None of the specified SKUs were found in the uploaded PDFs</div></div></div>';
+                downloadAllBtn.style.display = 'none';
+                return;
+            }
+
+            resultsList.innerHTML = validationHtml + Array.from(state.processedPDFs.entries()).map(([sku, data]) => `
+                <div class="result-item">
+                    <div class="result-info">
+                        <div class="result-sku">${sku}</div>
+                        <div class="result-pages">${data.pageCount} page${data.pageCount !== 1 ? 's' : ''}</div>
+                        <div class="result-stats" style="display: flex; gap: 15px; margin-top: 8px; font-size: 0.9em; color: #718096;">
+                            <span>📋 ${data.fbaLabels} FBA label${data.fbaLabels !== 1 ? 's' : ''}</span>
+                            <span>📦 ${data.upsLabels} UPS label${data.upsLabels !== 1 ? 's' : ''}</span>
+                        </div>
+                    </div>
+                    <button class="download-btn" onclick="downloadPDF('${sku}')">Download</button>
+                </div>
+            `).join('');
+
+            downloadAllBtn.style.display = 'block';
+            processBtn.disabled = false;
+        }
+
+        function downloadPDF(sku) {
+            const data = state.processedPDFs.get(sku);
+            if (data) {
+                const blob = new Blob([data.bytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${sku}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        downloadAllBtn.addEventListener('click', () => {
+            state.processedPDFs.forEach((data, sku) => {
+                setTimeout(() => downloadPDF(sku), 100);
+            });
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+        }
+
+        // Make functions globally accessible
+        window.removeFile = removeFile;
+        window.removeSku = removeSku;
+        window.downloadPDF = downloadPDF;
+    </script>
+</body>
+</html>
